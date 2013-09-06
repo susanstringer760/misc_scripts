@@ -23,22 +23,25 @@ while (<HTML>) {
   push(@arr, $_);
 }
 
-my $category_hash;
+my %category_hash;
 my $arr_ref = [];
-$category_hash->{'navigation'} = [];
-$category_hash->{'state_parameters'} = [];
-$category_hash->{'aerosols'} = [];
-$category_hash->{'irradiance'} = [];
-$category_hash->{'chemistry'} = [];
-$category_hash->{'oxides_of_nitrogen'} = [];
+my $hash_ref = {};
+my ($instrument_name,$instrument_short_name);
+
+# list of categories
+$category_hash{'navigation'} = [];
+$category_hash{'state_parameters'} = [];
+$category_hash{'aerosols'} = [];
+$category_hash{'irradiance'} = [];
+$category_hash{'chemistry'} = [];
+$category_hash{'oxides_of_nitrogen'} = [];
 
 for ($i=0; $i<$#arr; $i++) {
-  $line = $arr[$i];
-  next if ($line =~ /^\s*$/);
 
-  # remove html elements
-  $line =~ s/(<\w+>)//g;
-  $line =~ s/\<\/\w+\>//g;
+  $instrument_flag = false;
+  $comment_flag = false;
+
+  $line = $arr[$i];
 
   # get report metadata
   $report_date = $arr[$i+1] if ( $line =~ /Date of report/ );
@@ -54,56 +57,31 @@ for ($i=0; $i<$#arr; $i++) {
   $category = 'irradiance' if ($line =~ /Irradiance/);
   $category = 'chemistry' if ($line =~ /Chemistry/);
   $category = 'oxides_of_nitrogen' if ($line =~ /Oxides of Nitrogen/);
-  next if ($category eq '');
+
   my $hash_ref = {};
-  $arr_ref = $category_hash{$category};
-  if ( $line =~ /\s+\d{1,}.$/) {
-    $instrument = $arr[$i+1];
-    $instrument =~ s/<b>|<\/b>//g;
-    $hash_ref->{'instrument'} = $instrument;
-    $comment = $arr[$i+5];
-    $comment =~ s/<b>|<\/b>//g;
+  if ( $line =~ /<b>\s*([\w\d\-\_\s\(\)\;]+)\s*<\/b>/ ) {
+    $instrument_name = $1;
+    $instrument_name =~ /(.*)\s*\(([\w\d\-\_\s]+)\)*/;
+    $instrument_short_name = $2;
+    $hash_ref->{'instrument_name'} = $instrument_name;
+    $hash_ref->{'instrument_short_name'} = $instrument_short_name;
+    $instrument_flag = true;
+  }
+  if ( $line =~ /<b>Comment:\s*<\/b>/ ) {
+    $comment = $arr[$i+2];
     $hash_ref->{'comment'} = $comment;
-    print "adding $instrument and $comment to $hash_ref\n";
-    push(@$arr_ref, $hash_ref);
+    $comment_flag = true;
   }
-  next();
-  $category_hash->{$category} = $arr_ref;
-}
-exit();
-foreach $category (keys(%$category_hash)) {
-  my $xx = $category_hash->{$category};
-  print "asdfas: $category = $#$xx\n";
-  next();
-  foreach $xx (@$arr_ref) {
-    print "\t: $xx\n";
+  if ( $instrument_flag eq 'true') {
+    print "adding ".$hash_ref->{'instrument_name'}." to $category\n";
+    push(@{$category_hash{$category}}, $hash_ref);
+    my @arr = @{$category_hash{$category}};
   }
+
+}
+
+foreach $category (keys(%category_hash)) {
+  my @arr = @{$category_hash{$category}};
+  print "category: $category has $#arr instruments\n";
 }
 exit();
-my @xx = keys(%$category_hash);
-print "asdfasdf: @xx\n";
-exit();
-print "after: $category_hash\n";
-exit();
-print "Report date: $report_date\n";
-print "Report author: $report_author\n";
-print "Submitted at: $submitted_at\n";
-print "Remaining hours: $remaining_hours\n";
-print "General comments: $general_comments\n";
-
-close(HTML);
-
-sub get_category_array_ref {
-
-  my $search_for = shift;
-
-  # get the category information
-  $category = 'navigation' if ($line =~ /Navigation/);
-  $category = 'state_parameters' if ($line =~ /State Parameters/);
-  $category = 'aerosols' if ($line =~ /Aerosols/);
-  $category = 'irradiance' if ($line =~ /Irradiance/);
-  $category = 'chemistry' if ($line =~ /Chemistry/);
-  $category = 'oxides_of_nitrogen' if ($line =~ /Oxides of Nitrogen/);
-
-  # get a reference to the array
-}
