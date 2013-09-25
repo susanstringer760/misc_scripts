@@ -53,13 +53,14 @@ for ($i=0; $i<$#arr; $i++) {
   # get the category information
   $category = 'navigation' if ($line =~ /Navigation/);
   $category = 'state_parameters' if ($line =~ /State Parameters/);
-  $category = 'aerosols' if ($line =~ /Aerosols/);
+  $category = 'aerosols' if ( $line =~ /\s*Aerosols$/ );
+  #$category = 'aerosols' if ($line =~ /^\s*Aerosols\s*$]$/);
   $category = 'irradiance' if ($line =~ /Irradiance/);
   $category = 'chemistry' if ($line =~ /Chemistry/);
   $category = 'oxides_of_nitrogen' if ($line =~ /Oxides of Nitrogen/);
 
   my $hash_ref = {};
-  if ( $line =~ /<b>\s*([\w\d\-\_\s\(\)\;]+)\s*<\/b>/ ) {
+  if ( $line =~ /<b>\s*([\w\d\-\_\s\(\)\;\,]+)\s*<\/b>/ ) {
     $instrument_name = $1;
     $instrument_name =~ /(.*)\s*\(([\w\d\-\_\s]+)\)*/;
     $instrument_short_name = $2;
@@ -80,8 +81,10 @@ for ($i=0; $i<$#arr; $i++) {
 
 }
 
+print "**********************\n";
 foreach $category (keys(%category_hash)) {
   my @arr = @{$category_hash{$category}};
-  print "category: $category has $#arr instruments\n";
+  my $num_instruments = $#arr+1;
+  print "category: $category has $num_instruments instruments\n";
 }
 exit();
