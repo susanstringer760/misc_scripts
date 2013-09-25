@@ -1,5 +1,5 @@
 # ignore data base dump files
-catalog2/facility_status/db_dump/*
+db
 # ignore html files used in parse_facility_status.pl
 catalog2/facility_status/html_files/*
 # ignore .swp
