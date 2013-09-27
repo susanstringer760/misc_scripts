@@ -3,15 +3,28 @@
 # parse sas html facility status file
 
 use Getopt::Std;
+use DBI;
 
 if ( $#ARGV < 0 ) {
   print "$0:\n";
   print "\t-f: name of file to parse\n";
+  print "\t-n: database name\n";
+  print "\t-u: database user\n";
+  print "\t-p: database password\n";
   exit();
 }
 
-getopt('f');
+getopt('fnup');
 my $fname = $opt_f; 
+my $db_name = $opt_n; 
+my $db_user = $opt_u; 
+my $db_password = $opt_p; 
+
+print "ERROR: database name not specified\n";exit() if (!$db_name);
+print "ERROR: database name not specified\n";exit() if (!$db_user);
+print "ERROR: database name not specified\n";exit() if (!$db_password);
+
+##### CONSTANTS #####
 
 # list of categories
 my $category_hash;
@@ -22,8 +35,19 @@ $category_hash{'irradiance'} = [];
 $category_hash{'chemistry'} = [];
 $category_hash{'oxides_of_nitrogen'} = [];
 
+my $project_id = 371;
+my $platform_id = 130;
+
+###################
+
 # get the info from the html file
-my $category_hash_ref = parse_html($fname,\%category_hash);
+my $category_hash_ref = parseHtml($fname,\%category_hash);
+
+# insert into db
+my $dbh = connectToDB($db_name,$db_user,$db_password);
+print "asdf: $dbh\n";exit();
+
+# now, insert into db
 foreach $category (keys(%category_hash)) {
   print "category: $category\n";
   foreach $instrument (@{$category_hash_ref->{$category}}) {
@@ -34,7 +58,7 @@ foreach $category (keys(%category_hash)) {
   }
 }
 
-sub parse_html
+sub parseHtml
 {
 
   my $html_fname = shift;
@@ -103,4 +127,34 @@ sub parse_html
   return $category_hash_ref;
   
 }
+sub connectToDB()
+{
+
+  my $db_name = shift;
+  my $user = shift;
+  my $password = shift;
+  my $host = shift;
+
+  return DBI->connect( "DBI:mysql:database=$db_name;
+                       host=$host",
+                       "$user",
+                       "$password",
+                       { PrintError => 0,
+                         PrintWarn => 1,
+                         RaiseError => 1,
+                         HandleError => \&dbiErrorHandler,
+                       } ) || die( "Unable to Connect to database" );
+
+}
+sub dbiErrorHandler {
+
+  $error = shift;
+  print "ERROR: $error\n";
+  exit();
+
+  return 1;
+
+}
+
+
 exit();
