@@ -20,9 +20,9 @@ my $db_name = $opt_n;
 my $db_user = $opt_u; 
 my $db_password = $opt_p; 
 
-print "ERROR: database name not specified\n";exit() if (!$db_name);
-print "ERROR: database name not specified\n";exit() if (!$db_user);
-print "ERROR: database name not specified\n";exit() if (!$db_password);
+if ( $db_name eq '' ) { print "ERROR: database name (-n) not specified\n";exit(); }
+if ( $db_user eq '' ) { print "ERROR: database user (-u) not specified\n";exit(); }
+if ( $db_password eq '' ) { print "ERROR: database password (-p) not specified\n";exit(); }
 
 ##### CONSTANTS #####
 
