@@ -10,11 +10,11 @@ my $c130_platform_id = 130;
 
 #my %platform_hash;
 my $platform_ref = {};
+my $sql;
 
 # GV
 my @gv_instrument_arr = (1 .. 15);
-@gv_instrument_arr = map("instrument$_"."0", @gv_instrument_arr);
-
+@gv_instrument_arr = map("gv_instrument$_", @gv_instrument_arr);
 my @gv_instrument_values;
 for ($i=0; $i<=$#gv_instrument_arr;$i++) {
   $instrument = $gv_instrument_arr[$i];
@@ -35,14 +35,16 @@ for ($i=0; $i<=$#gv_instrument_arr;$i++) {
 print "GV\n";
 foreach $hash (@gv_instrument_values) {
   print $hash->{'instrument_name'}."\n";
-  print "\t".$hash->{'category_id'}."\n";
-  print "\t".$hash->{'platform_id'}."\n";
+  $sql = "insert into instrument (instrument_name) values ('$instrument')";
+  print "\tcategory id: ".$hash->{'category_id'}."\n";
+  print "\tplatform id: ".$hash->{'platform_id'}."\n";
+  $sql = "insert
 }
 print "**************\n";
 
 # C130
 my @c130_instrument_arr = (1 .. 20);
-@c130_instrument_arr = map("instrument$_", @c130_instrument_arr);
+@c130_instrument_arr = map("c130_instrument$_", @c130_instrument_arr);
 my @c130_instrument_values;
 for ($i=0; $i<=$#c130_instrument_arr;$i++) {
   $instrument = $c130_instrument_arr[$i];
@@ -65,9 +67,10 @@ for ($i=0; $i<=$#c130_instrument_arr;$i++) {
 print "C130\n";
 foreach $hash (@c130_instrument_values) {
   print $hash->{'instrument_name'}."\n";
-  print "\t".$hash->{'category_id'}."\n";
-  print "\t".$hash->{'platform_id'}."\n";
+  print "\tcategory id: ".$hash->{'category_id'}."\n";
+  print "\tplatform id: ".$hash->{'platform_id'}."\n";
 }
+print "**************\n";
 
 exit();
 
@@ -105,4 +108,55 @@ foreach $platform (sort(keys(%platform_hash))) {
   foreach $instrument (@$arr_ref) {
     print "\t$instrument\n";
   }
+}
+
+my $name = $instrument->{'instrument_name'};
+my $short_name = $instrument->{'instrument_short_name'};
+my $comment = $instrument->{'comment'};
+next() if ( !$name );
+$short_name = '' if ( !$short_name );
+$comment = '' if ( !$comment);
+
+#first, make sure it's not a duplicate instrument
+my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
+my $id = $dbh->selectrow_array($id_sql);
+#don't try to enter duplicate record
+next() if ( $id );
+    
+
+sub insert_instrument {
+
+  my $name = shift;
+  my $short_name = '';
+
+  #first, make sure it's not a duplicate instrument
+  my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
+  my $id = $dbh->selectrow_array($id_sql);
+  #don't try to enter duplicate record
+  next() if ( $id );
+  my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
+  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+
+}
+sub get_instrument_id {
+
+  my $name = shift;
+  my $short_name = '';
+  my $instrument_sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
+  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+  my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
+  my $instrument_id = $dbh->selectrow_array($id_sql);
+
+  return $instrument_id;
+
+}
+sub insert_facility_status {
+
+  my $project_id = shift;
+  my $platform_id = shift;
+  my $instrument_id = shift;
+  my $status = shift;
+  my $comment = shift;
+  my $category_id = shift;
+
 }
