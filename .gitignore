@@ -4,7 +4,7 @@ db
 catalog2/facility_status/html_files/*
 catalog2/facility_status/db_dump/*
 # ignore .swp
-*.swp
-*.log
-*.out
-*.hold
+#*.swp
+#*.log
+#*.out
+#*.hold
