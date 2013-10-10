@@ -129,21 +129,21 @@ sub insert_instrument {
   my $name = shift;
   my $short_name = '';
 
-  #first, make sure it's not a duplicate instrument
+  # first, make sure it's not a duplicate instrument
   my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
   my $id = $dbh->selectrow_array($id_sql);
-  #don't try to enter duplicate record
+  # don't try to enter duplicate record
   next() if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
-  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+  print "$sql\n";
+  exit();
+  #$dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
 
 }
 sub get_instrument_id {
 
   my $name = shift;
   my $short_name = '';
-  my $instrument_sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
-  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
   my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
   my $instrument_id = $dbh->selectrow_array($id_sql);
 
@@ -158,5 +158,13 @@ sub insert_facility_status {
   my $status = shift;
   my $comment = shift;
   my $category_id = shift;
+
+  #first, make sure it's not a duplicate instrument
+  my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
+  my $id = $dbh->selectrow_array($id_sql);
+  #don't try to enter duplicate record
+  next() if ( $id );
+  my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
+  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
 
 }
