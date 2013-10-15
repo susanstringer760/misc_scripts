@@ -51,49 +51,52 @@ $category_id{'gps'} = 19;
 my $facility_status_ref = {};
 my $sql;
 
-#xx# GV
-#xxmy @gv_instrument_arr = (1 .. 15);
-#xx@gv_instrument_arr = map("gv_instrument$_", @gv_instrument_arr);
-#xxmy @gv_instrument_values;
-#xxmy %gv_instrument_category_id;
-#xxmy $facility_status_category_id;
-#xxmy $facility_status_status;
-#xxfor ($i=0; $i<=$#gv_instrument_arr;$i++) {
-#xx  my $name = $gv_instrument_arr[$i];
-#xx  my $short_name = $name;
-#xx  $short_name =~ s/instrument//g;
-#xx  my $facility_status_comment = "$name comment";
-#xx  if ( $i >= 0 && $i < 5 ) {
-#xx    $facility_status_category_id = 58,
-#xx    $facility_status_status = 'up';
-#xx  } elsif ( $i >= 5 && $i < 12 ) {
-#xx    $facility_status_category_id = 59,
-#xx    $facility_status_status = 'down';
-#xx  } else {
-#xx    $facility_status_category_id = 60,
-#xx    $facility_status_status = 'provisional';
-#xx  }
-#xx  # create instrument
-#xx  my $instrument_id = insert_instrument($dbh,$name,$short_name);
-#xx
-#xx  my $hash = {
-#xx    'project_id'=>$project_id,
-#xx    'platform_id'=>$platform_id{'gv'},
-#xx    'instrument_id'=>$instrument_id,
-#xx    'category_id'=>$facility_status_category_id,
-#xx    'status'=>$facility_status_status,
-#xx    'comment'=>$facility_status_comment,
-#xx  };
-#xx
-#xx  my $facility_status_id = insert_facility_status($dbh,$hash,$name);
-#xx
-#xx  print "asdf: $name and $short_name and $instrument_id\n";
-#xx  exit();
-#xx
-#xx}
-#xx
+# GV
+my @gv_instrument_arr = (1 .. 15);
+@gv_instrument_arr = map("gv_instrument$_", @gv_instrument_arr);
+my @gv_instrument_values;
+my %gv_instrument_category_id;
+my $facility_status_category_id;
+my $facility_status_status;
+for ($i=0; $i<=$#gv_instrument_arr;$i++) {
+  my $name = $gv_instrument_arr[$i];
+  my $short_name = $name;
+  $short_name =~ s/instrument//g;
+  my $facility_status_comment = "$name comment";
+  if ( $i >= 0 && $i < 5 ) {
+    $facility_status_category_id = 58,
+    $facility_status_status = 'up';
+  } elsif ( $i >= 5 && $i < 12 ) {
+    $facility_status_category_id = 59,
+    $facility_status_status = 'down';
+  } else {
+    $facility_status_category_id = 60,
+    $facility_status_status = 'provisional';
+  }
+  # create instrument
+  #my $instrument_id = insert_instrument($dbh,$name,$short_name);
+
+  my $hash = {
+    'name'=>$name,
+    'short_name'=>$short_name,
+    'project_id'=>$project_id,
+    'platform_id'=>$platform_id{'gv'},
+    'instrument_id'=>$instrument_id,
+    'category_id'=>$facility_status_category_id,
+    'status'=>$facility_status_status,
+    'comment'=>$facility_status_comment,
+    'report_date'=>$date,
+  };
+
+  my $facility_status_id = insert_facility_status($dbh,$hash);
+
+  print "asdf: $name and $short_name and $instrument_id\n";
+  exit();
+
+}
+
 #************************
-sub insert_facility_status {
+sub xxinsert_facility_status {
 
   my $dbh = shift;
   my $column_value_hash = shift;
@@ -133,7 +136,22 @@ sub get_facility_status_id {
   my $comment = shift;
   my $report_date = shift;
 
-sub insert_facility_status {
+} 
+sub xxxinsert_facility_status {
+
+  #my $facility_status_id = insert_facility_status($dbh,$hash,$name);
+  my $dbh = shift;
+  my $hash = shift;
+  my $name = shift;
+
+#  my $hash = {
+#    'project_id'=>$project_id,
+#    'platform_id'=>$platform_id{'gv'},
+#    'instrument_id'=>$instrument_id,
+#    'category_id'=>$facility_status_category_id,
+#    'status'=>$facility_status_status,
+#    'comment'=>$facility_status_comment,
+#  };
 
   my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
   print "$sql\n";
@@ -158,16 +176,46 @@ sub get_instrument_id {
 }
 sub insert_facility_status {
 
-  my $project_id = shift;
-  my $platform_id = shift;
-  my $instrument_id = shift;
-  my $status = shift;
-  my $comment = shift;
-  my $category_id = shift;
+  my $dbh = shift;
+  my $row_hash = shift;
+
+#  my $hash = {
+#    'project_id'=>$project_id,
+#    'platform_id'=>$platform_id{'gv'},
+#    'instrument_id'=>$instrument_id,
+#    'category_id'=>$facility_status_category_id,
+#    'status'=>$facility_status_status,
+#    'comment'=>$facility_status_comment,
+#  };
+  my $name = $row_hash->{'name'};
+  my $short_name = $row_hash->{'short_name'};
+  my $project_id = $row_hash->{'project_id'};
+  my $platform_id = $row_hash->{'platform_id'};
+  my $instrument_id = $row_hash->{'instrument_id'};
+  my $category_id = $row_hash->{'category_id'};
+  my $status = $row_hash->{'status'};
+  my $comment = $row_hash->{'comment'};
+  my $report_date = $row_hash->{'report_date'};
+
+  my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
+  my $id = $dbh->selectrow_array($sql);
+  next() if ( $id );
+  my $sql = "INSERT INTO catalog_facility_status (name,short_name,project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ('$name','$short_name',$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$report_date)";
+  #$dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+  print "asdf: $sql\n";exit();
+
+
+  
+
+#  my $project_id = shift;
+#  my $platform_id = shift;
+#  my $instrument_id = shift;
+#  my $status = shift;
+#  my $comment = shift;
+#  my $category_id = shift;
 
   #first, make sure it's not a duplicate instrument
   my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
-  my $id = $dbh->selectrow_array($id_sql);
   #don't try to enter duplicate record
   next() if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
