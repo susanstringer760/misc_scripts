@@ -17,6 +17,7 @@ foreach my $i (0..7)
 
   my $script_fname = "/usr/local/snorman/misc_scripts/catalog2/facility_status/populate_db.pl";
   $script_fname = "$script_fname -n zith9_mpex_facility_status -u snorman -p emdac -h localhost -d '$report_date'";
-  system($script_fname);
+  print "$script_fname\n";
+  #system($script_fname);
   exit();
 }
