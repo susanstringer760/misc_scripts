@@ -74,11 +74,9 @@ for ($i=0; $i<=$#gv_instrument_arr;$i++) {
     $facility_status_status = 'provisional';
   }
   # create instrument
-  #my $instrument_id = insert_instrument($dbh,$name,$short_name);
+  my $instrument_id = insert_instrument($dbh,$name,$short_name);
 
   my $hash = {
-    'name'=>$name,
-    'short_name'=>$short_name,
     'project_id'=>$project_id,
     'platform_id'=>$platform_id{'gv'},
     'instrument_id'=>$instrument_id,
@@ -90,22 +88,9 @@ for ($i=0; $i<=$#gv_instrument_arr;$i++) {
 
   my $facility_status_id = insert_facility_status($dbh,$hash);
 
-  print "asdf: $name and $short_name and $instrument_id\n";
-  exit();
-
 }
 
 #************************
-sub xxinsert_facility_status {
-
-  my $dbh = shift;
-  my $column_value_hash = shift;
-  print "testit: $id\n";exit();
-
-  # assemble the sql
-
-}
-    
 sub insert_instrument {
 
   my $dbh = shift;
@@ -126,7 +111,6 @@ sub insert_instrument {
   return $instrument_id;
 
 }
-
 sub get_facility_status_id {
 
   my $dbh = shift;
@@ -137,31 +121,6 @@ sub get_facility_status_id {
   my $report_date = shift;
 
 } 
-sub xxxinsert_facility_status {
-
-  #my $facility_status_id = insert_facility_status($dbh,$hash,$name);
-  my $dbh = shift;
-  my $hash = shift;
-  my $name = shift;
-
-#  my $hash = {
-#    'project_id'=>$project_id,
-#    'platform_id'=>$platform_id{'gv'},
-#    'instrument_id'=>$instrument_id,
-#    'category_id'=>$facility_status_category_id,
-#    'status'=>$facility_status_status,
-#    'comment'=>$facility_status_comment,
-#  };
-
-  my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
-  print "$sql\n";
-  exit();
-  
- # my $instrument_id = $dbh->selectrow_array($sql);
-
- # return $instrument_id;
-
-}
 sub get_instrument_id {
 
   my $dbh = shift;
@@ -179,16 +138,6 @@ sub insert_facility_status {
   my $dbh = shift;
   my $row_hash = shift;
 
-#  my $hash = {
-#    'project_id'=>$project_id,
-#    'platform_id'=>$platform_id{'gv'},
-#    'instrument_id'=>$instrument_id,
-#    'category_id'=>$facility_status_category_id,
-#    'status'=>$facility_status_status,
-#    'comment'=>$facility_status_comment,
-#  };
-  my $name = $row_hash->{'name'};
-  my $short_name = $row_hash->{'short_name'};
   my $project_id = $row_hash->{'project_id'};
   my $platform_id = $row_hash->{'platform_id'};
   my $instrument_id = $row_hash->{'instrument_id'};
@@ -200,26 +149,10 @@ sub insert_facility_status {
   my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
   my $id = $dbh->selectrow_array($sql);
   next() if ( $id );
-  my $sql = "INSERT INTO catalog_facility_status (name,short_name,project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ('$name','$short_name',$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$report_date)";
-  #$dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
-  print "asdf: $sql\n";exit();
+  my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
+  print "facility_status: $sql\n";
+  $dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
 
-
-  
-
-#  my $project_id = shift;
-#  my $platform_id = shift;
-#  my $instrument_id = shift;
-#  my $status = shift;
-#  my $comment = shift;
-#  my $category_id = shift;
-
-  #first, make sure it's not a duplicate instrument
-  my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
-  #don't try to enter duplicate record
-  next() if ( $id );
-  my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
-  $dbh->do($instrument_sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
 
 }
 sub connectToDB()
