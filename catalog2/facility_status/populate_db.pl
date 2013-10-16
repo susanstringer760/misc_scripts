@@ -93,7 +93,6 @@ my %gv_instrument_category_id;
 my $facility_status_category_id;
 my $facility_status_status;
 for ($i=0; $i<=$#gv_instrument_arr;$i++) {
-next();
   my $name = $gv_instrument_arr[$i];
   my $short_name = $name;
   $short_name =~ s/instrument//g;
