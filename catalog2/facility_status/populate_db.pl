@@ -48,8 +48,42 @@ $category_id{'wsr_88d'} = 14;
 $category_id{'aws'} = 19;
 $category_id{'gps'} = 19;
 
+my %status;
+$status{'goes_13'} = 'up';
+$status{'goes_10'} = 'down';
+$status{'csu_chill'} = 'provisional';
+$status{'spol'} = 'down';
+$status{'wsr_88d'} = 'down';
+$status{'aws'} = 'up';
+$status{'gps'} = 'down';
+
+my %comment;
+$comment{'goes_13'} = '';
+$comment{'goes_10'} = 'goes 10 comment';
+$comment{'csu_chill'} = 'csu chill comment';
+$comment{'spol'} = 'something not working';
+$comment{'wsr_88d'} = '';
+$comment{'aws'} = '';
+$comment{'gps'} = 'unknown';
+
 my $facility_status_ref = {};
 my $sql;
+
+foreach $key (keys(%status)) {
+
+  my $hash = {
+    'project_id'=>$project_id,
+    'platform_id'=>$platform_id{$key},
+    'instrument_id'=>NULL,
+    'category_id'=>$category_id{$key},
+    'status'=>$status{$key},
+    'comment'=>$comment{$key},
+    'report_date'=>$date,
+  };
+
+  my $facility_status_id = insert_facility_status($dbh,$hash);
+
+} # end foreach
 
 # GV
 my @gv_instrument_arr = (1 .. 15);
@@ -59,6 +93,7 @@ my %gv_instrument_category_id;
 my $facility_status_category_id;
 my $facility_status_status;
 for ($i=0; $i<=$#gv_instrument_arr;$i++) {
+next();
   my $name = $gv_instrument_arr[$i];
   my $short_name = $name;
   $short_name =~ s/instrument//g;
@@ -88,7 +123,45 @@ for ($i=0; $i<=$#gv_instrument_arr;$i++) {
 
   my $facility_status_id = insert_facility_status($dbh,$hash);
 
-}
+} # end for GV 
+
+my @c130_instrument_arr = (1 .. 10);
+@c130_instrument_arr = map("c130_instrument$_", @c130_instrument_arr);
+my @c130_instrument_values;
+my %c130_instrument_category_id;
+my $facility_status_category_id;
+my $facility_status_status;
+for ($i=0; $i<=$#c130_instrument_arr;$i++) {
+  my $name = $c130_instrument_arr[$i];
+  my $short_name = $name;
+  $short_name =~ s/instrument//g;
+  my $facility_status_comment = "$name comment";
+  if ( $i >= 0 && $i < 3 ) {
+    $facility_status_category_id = 58,
+    $facility_status_status = 'up';
+  } elsif ( $i >= 3 && $i < 8 ) {
+    $facility_status_category_id = 59,
+    $facility_status_status = 'down';
+  } else {
+    $facility_status_category_id = 60,
+    $facility_status_status = 'provisional';
+  }
+  # create instrument
+  my $instrument_id = insert_instrument($dbh,$name,$short_name);
+
+  my $hash = {
+    'project_id'=>$project_id,
+    'platform_id'=>$platform_id{'gv'},
+    'instrument_id'=>$instrument_id,
+    'category_id'=>$facility_status_category_id,
+    'status'=>$facility_status_status,
+    'comment'=>$facility_status_comment,
+    'report_date'=>$date,
+  };
+
+  my $facility_status_id = insert_facility_status($dbh,$hash);
+
+} # end for C130 
 
 #************************
 sub insert_instrument {
@@ -152,7 +225,6 @@ sub insert_facility_status {
   my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
   print "facility_status: $sql\n";
   $dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
-
 
 }
 sub connectToDB()
