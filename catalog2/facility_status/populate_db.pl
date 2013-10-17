@@ -150,7 +150,7 @@ for ($i=0; $i<=$#c130_instrument_arr;$i++) {
 
   my $hash = {
     'project_id'=>$project_id,
-    'platform_id'=>$platform_id{'gv'},
+    'platform_id'=>$platform_id{'c130'},
     'instrument_id'=>$instrument_id,
     'category_id'=>$facility_status_category_id,
     'status'=>$facility_status_status,
@@ -174,7 +174,7 @@ sub insert_instrument {
   my $id_sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
   my $id = $dbh->selectrow_array($id_sql);
   # don't try to enter duplicate record
-  next() if ( $id );
+  return $id if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
   print "$sql\n";
   $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
