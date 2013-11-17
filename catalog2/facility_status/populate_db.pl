@@ -6,163 +6,77 @@
 use Getopt::Std;
 use DBI;
 
-if ( $#ARGV < 0 ) {
+if ( $#ARGV <= 0 ) {
   print "$0:\n";
-  print "\t-n: db name\n";
-  print "\t-u: db user\n";
-  print "\t-p: db password\n";
-  print "\t-h: db host\n";
-  print "\t-d: date\n";
+  print "\t-n project abrev\n";
+  print "\t-p platorm temporary table name\n";
+  print "\t-c category temporary table name\n";
+  print "\t-i project id\n";
+  print "\t-d date (YYYY-MM-DD)\n";
   exit();
 }
 
-# db information
-getopt('nuphd');
-my $db_name = $opt_n;
-my $db_user = $opt_u;
-my $db_password = $opt_p;
-my $db_host = $opt_h;
+getopt('npcid');
+my $project_name = $opt_n;
+my $platform_table_name = $opt_p;
+my $category_table_name = $opt_c;
+my $project_id = $opt_i;
 my $date = $opt_d;
-my $dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
 
-my $project_id=371;
-my %platform_id;
-$platform_id{'gv'} = 350;
-$platform_id{'c130'} = 130;
-$platform_id{'goes_13'} = 405;
-$platform_id{'goes_10'} = 232;
-$platform_id{'csu_chill'} = 450;
-$platform_id{'spol'} = 398;
-$platform_id{'wsr_88d'} = 79;
-$platform_id{'aws'} = 88;
-$platform_id{'gps'} = 150;
+# db info
+$db_name = "zith9_mpex_facility_status";
+$db_user = "snorman";
+$db_password = "emdac";
+$db_host = "localhost";
+$dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
 
-my %category_id;
-$category_id{'gv'} = 2;
-$category_id{'c130'} = 2;
-$category_id{'goes_13'} = 15;
-$category_id{'goes_10'} = 15;
-$category_id{'csu_chill'} = 14;
-$category_id{'spol'} = 14;
-$category_id{'wsr_88d'} = 14;
-$category_id{'aws'} = 19;
-$category_id{'gps'} = 19;
+# create temporary platform table
+my $platform_sql = "create temporary table if not exists $platform_table_name as (select dp.dataset_id,dp.platform_id,p.name from dataset_platform dp, platform p where dp.dataset_id in (select dataset_id from dataset_project where project_id = $project_id) and p.name like '%,%' and dp.platform_id = p.id)";
+$dbh->do($platform_sql);
 
-my %status;
-$status{'goes_13'} = 'up';
-$status{'goes_10'} = 'down';
-$status{'csu_chill'} = 'provisional';
-$status{'spol'} = 'down';
-$status{'wsr_88d'} = 'down';
-$status{'aws'} = 'up';
-$status{'gps'} = 'down';
+# create temporary category table
+my $category_sql = "create temporary table if not exists $category_table_name as (select dc.dataset_id,dc.category_id,c.name from dataset_category dc, category c where dc.dataset_id in (select dataset_id from dataset_project where project_id = $project_id) and dc.category_id = c.id)";
+$dbh->do($category_sql);
 
-my %comment;
-$comment{'goes_13'} = '';
-$comment{'goes_10'} = 'goes 10 comment';
-$comment{'csu_chill'} = 'csu chill comment';
-$comment{'spol'} = 'something not working';
-$comment{'wsr_88d'} = '';
-$comment{'aws'} = '';
-$comment{'gps'} = 'unknown';
+#
+my $platform_category_sql = "select distinct p.platform_id,p.name,c.category_id,c.name from $platform_table_name p, $category_table_name c where p.dataset_id=c.dataset_id order by p.platform_id";
+my @platform_category_arr = @{$dbh->selectall_arrayref("$platform_category_sql")};
 
-my $facility_status_ref = {};
-my $sql;
-
-foreach $key (keys(%status)) {
-
-  my $hash = {
-    'project_id'=>$project_id,
-    'platform_id'=>$platform_id{$key},
-    'instrument_id'=>NULL,
-    'category_id'=>$category_id{$key},
-    'status'=>$status{$key},
-    'comment'=>$comment{$key},
-    'report_date'=>$date,
-  };
-
-  my $facility_status_id = insert_facility_status($dbh,$hash);
-
-} # end foreach
-
-# GV
-my @gv_instrument_arr = (1 .. 15);
-@gv_instrument_arr = map("gv_instrument$_", @gv_instrument_arr);
-my @gv_instrument_values;
-my %gv_instrument_category_id;
-my $facility_status_category_id;
-my $facility_status_status;
-for ($i=0; $i<=$#gv_instrument_arr;$i++) {
-  my $name = $gv_instrument_arr[$i];
-  my $short_name = $name;
-  $short_name =~ s/instrument//g;
-  my $facility_status_comment = "$name comment";
-  if ( $i >= 0 && $i < 5 ) {
-    $facility_status_category_id = 58,
-    $facility_status_status = 'up';
-  } elsif ( $i >= 5 && $i < 12 ) {
-    $facility_status_category_id = 59,
-    $facility_status_status = 'down';
-  } else {
-    $facility_status_category_id = 60,
-    $facility_status_status = 'provisional';
+my $platform_id_index = 0;
+my $platform_name_index = 1;
+my $category_id_index = 2;
+my $category_name_index = 3;
+my $num_instruments = 4;
+my ($status,$comment);
+for ($i=0; $i <= $#platform_category_arr; $i++) {
+  my $platform_id = $platform_category_arr[$i][$platform_id_index];
+  my $platform_name =  $platform_category_arr[$i][$platform_name_index];
+  my $category_id = $platform_category_arr[$i][$category_id_index];
+  my $category_name = $platform_category_arr[$i][$category_name_index];
+  $status = "up"; 
+  $comment = "$project_name: $platform_name comment";
+  if ($platform_name =~ /Aircraft/) {
+    for ($i = 1;$i <= $num_instruments; $i++) {
+      $status = "up";
+      $platform_name =~ /(Aircraft),([\w\d\-\_\s]+)/;
+      my $instrument_short_name = $2;
+      $instrument_short_name =~ s/(^\s+)||(\s+$)//g;
+      $instrument_short_name =~ s/\s+/\_/g;
+      my $instrument_name = "$instrument_short_name"."_instrument$i";
+      $comment = "$project_name: $platform_name instrument$i comment";
+      $instrument_id = insert_instrument($dbh,$instrument_name,$instrument_short_name);
+      #print "\tadding instrument: name: $instrument_name and short: $instrument_short_name to instrument\n";
+      #print "\tadding facility status: project: $project_id and platfomr: $platform_id and i: $instrument_name and istatus: $status and icomment: '$comment'\n\n";
+      my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
+      print "******************\n";
+    } 
+    $num_instruments += 3;
   }
-  # create instrument
-  my $instrument_id = insert_instrument($dbh,$name,$short_name);
-
-  my $hash = {
-    'project_id'=>$project_id,
-    'platform_id'=>$platform_id{'gv'},
-    'instrument_id'=>$instrument_id,
-    'category_id'=>$facility_status_category_id,
-    'status'=>$facility_status_status,
-    'comment'=>$facility_status_comment,
-    'report_date'=>$date,
-  };
-
-  my $facility_status_id = insert_facility_status($dbh,$hash);
-
-} # end for GV 
-
-my @c130_instrument_arr = (1 .. 10);
-@c130_instrument_arr = map("c130_instrument$_", @c130_instrument_arr);
-my @c130_instrument_values;
-my %c130_instrument_category_id;
-my $facility_status_category_id;
-my $facility_status_status;
-for ($i=0; $i<=$#c130_instrument_arr;$i++) {
-  my $name = $c130_instrument_arr[$i];
-  my $short_name = $name;
-  $short_name =~ s/instrument//g;
-  my $facility_status_comment = "$name comment";
-  if ( $i >= 0 && $i < 3 ) {
-    $facility_status_category_id = 58,
-    $facility_status_status = 'up';
-  } elsif ( $i >= 3 && $i < 8 ) {
-    $facility_status_category_id = 59,
-    $facility_status_status = 'down';
-  } else {
-    $facility_status_category_id = 60,
-    $facility_status_status = 'provisional';
-  }
-  # create instrument
-  my $instrument_id = insert_instrument($dbh,$name,$short_name);
-
-  my $hash = {
-    'project_id'=>$project_id,
-    'platform_id'=>$platform_id{'c130'},
-    'instrument_id'=>$instrument_id,
-    'category_id'=>$facility_status_category_id,
-    'status'=>$facility_status_status,
-    'comment'=>$facility_status_comment,
-    'report_date'=>$date,
-  };
-
-  my $facility_status_id = insert_facility_status($dbh,$hash);
-
-} # end for C130 
-
-#************************
+  # now add facility_status platform
+  my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
+  #print "adding project_id: $project_id and platform_id: $platform_id and category_id: $category_id and status: $status and comment: '$comment' to catalog_facility_status\n\n";
+}
+#***************************
 sub insert_instrument {
 
   my $dbh = shift;
@@ -176,9 +90,9 @@ sub insert_instrument {
   # don't try to enter duplicate record
   return $id if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
-  print "$sql\n";
-  $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
-  $instrument_id = get_instrument_id($dbh,$name,$short_name);
+  print "$sql\n\n";
+  #$dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+  #$instrument_id = get_instrument_id($dbh,$name,$short_name);
 
   return $instrument_id;
 
@@ -191,6 +105,11 @@ sub get_facility_status_id {
   my $status = shift;
   my $comment = shift;
   my $report_date = shift;
+
+  my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
+  my $id = $dbh->selectrow_array($sql);
+
+  return $id;
 
 } 
 sub get_instrument_id {
@@ -208,24 +127,66 @@ sub get_instrument_id {
 sub insert_facility_status {
 
   my $dbh = shift;
-  my $row_hash = shift;
+  my $project_id = shift;
+  my $platform_id = shift;
+  my $instrument_id = shift;
+  my $category_id = shift;
+  my $status = shift;
+  my $comment = shift;
+  my $report_date = shift;
 
-  my $project_id = $row_hash->{'project_id'};
-  my $platform_id = $row_hash->{'platform_id'};
-  my $instrument_id = $row_hash->{'instrument_id'};
-  my $category_id = $row_hash->{'category_id'};
-  my $status = $row_hash->{'status'};
-  my $comment = $row_hash->{'comment'};
-  my $report_date = $row_hash->{'report_date'};
+  $instrument_id = 'NULL' if (!$instrument_id);
+  print "asdf: $instrument_id\n";
 
-  my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
-  my $id = $dbh->selectrow_array($sql);
-  next() if ( $id );
+  my $id = get_facility_status_id($dbh,$project_id,$platform_id,$status,$comment,$report_date);
+  if ($id) {
+    print "$id already exists..\n";
+  }
+  return $id if ( $id );
   my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
-  print "facility_status: $sql\n";
-  $dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
+  print "facility_status: $sql\n\n";
+  #$dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
+  #exit();
+
+  #my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
+  #my $id = $dbh->selectrow_array($sql);
+  #next() if ( $id );
+  #my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
+  #print "facility_status: $sql\n";
+  #$dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
 
 }
+sub connectToDB()
+{
+
+  my $db_name = shift;
+  my $user = shift;
+  my $password = shift;
+  my $host = shift;
+
+  return DBI->connect( "DBI:mysql:database=$db_name;
+                       host=$host",
+                       "$user",
+                       "$password",
+                       { PrintError => 0,
+                         PrintWarn => 1,
+                         RaiseError => 1,
+                         HandleError => \&dbiErrorHandler,
+                       } ) || die( "Unable to Connect to database" );
+
+}
+
+sub dbiErrorHandler {
+
+  $error = shift;
+  print "ERROR: $error\n";
+  exit();
+
+  return 1;
+
+}
+
+
 sub connectToDB()
 {
 
