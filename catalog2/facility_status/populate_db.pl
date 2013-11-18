@@ -48,32 +48,44 @@ my $category_id_index = 2;
 my $category_name_index = 3;
 my $num_instruments = 4;
 my ($status,$comment);
+my $add_flag = true;
 for ($i=0; $i <= $#platform_category_arr; $i++) {
+  $status = 'up' if ($i % 1) == 0;
+  $status = 'down' if ($i % 2) == 0;
+  $status = 'provisional' if ($i % 3) == 0;
   my $platform_id = $platform_category_arr[$i][$platform_id_index];
   my $platform_name =  $platform_category_arr[$i][$platform_name_index];
   my $category_id = $platform_category_arr[$i][$category_id_index];
   my $category_name = $platform_category_arr[$i][$category_name_index];
-  $status = "up"; 
+  #$status = "up"; 
   $comment = "$project_name: $platform_name comment";
+  $add_flag = true;
   if ($platform_name =~ /Aircraft/) {
-    for ($i = 1;$i <= $num_instruments; $i++) {
-      $status = "up";
+    for ($j = 1;$j <= $num_instruments; $j++) {
+      $status = 'up' if ($j % 1) == 0;
+      $status = 'down' if ($j % 2) == 0;
+      $status = 'provisional' if ($j % 3) == 0;
+      #$status = "up";
       $platform_name =~ /(Aircraft),([\w\d\-\_\s]+)/;
-      my $instrument_short_name = $2;
-      $instrument_short_name =~ s/(^\s+)||(\s+$)//g;
-      $instrument_short_name =~ s/\s+/\_/g;
-      my $instrument_name = "$instrument_short_name"."_instrument$i";
-      $comment = "$project_name: $platform_name instrument$i comment";
-      $instrument_id = insert_instrument($dbh,$instrument_name,$instrument_short_name);
-      #print "\tadding instrument: name: $instrument_name and short: $instrument_short_name to instrument\n";
-      #print "\tadding facility status: project: $project_id and platfomr: $platform_id and i: $instrument_name and istatus: $status and icomment: '$comment'\n\n";
+      #my $instrument_short_name = $2;
+      my $instrument_name = $2;
+      $instrument_name =~ s/(^\s+)||(\s+$)//g;
+      $instrument_name =~ s/\s+/\_/g;
+      my $instrument_short_name = $instrument_name;
+      $instrument_name .= "_instrument$j";
+      $instrument_short_name .= "_$j";
+      $comment = "$project_name: $platform_name instrument$j comment";
+      my $instrument_id = insert_instrument($dbh,$instrument_name,$instrument_short_name);
       my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
       print "******************\n";
     } 
+    $add_flag = false;
     $num_instruments += 3;
   }
   # now add facility_status platform
-  my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
+  if ( $add_flag eq 'true') {
+    my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
+  }
   #print "adding project_id: $project_id and platform_id: $platform_id and category_id: $category_id and status: $status and comment: '$comment' to catalog_facility_status\n\n";
 }
 #***************************
@@ -90,11 +102,9 @@ sub insert_instrument {
   # don't try to enter duplicate record
   return $id if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
-  print "$sql\n\n";
-  #$dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
-  #$instrument_id = get_instrument_id($dbh,$name,$short_name);
+  $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
 
-  return $instrument_id;
+  return $id;
 
 }
 sub get_facility_status_id {
@@ -136,24 +146,11 @@ sub insert_facility_status {
   my $report_date = shift;
 
   $instrument_id = 'NULL' if (!$instrument_id);
-  print "asdf: $instrument_id\n";
 
   my $id = get_facility_status_id($dbh,$project_id,$platform_id,$status,$comment,$report_date);
-  if ($id) {
-    print "$id already exists..\n";
-  }
   return $id if ( $id );
   my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
-  print "facility_status: $sql\n\n";
-  #$dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
-  #exit();
-
-  #my $sql = "select id from catalog_facility_status where (project_id = $project_id) and (platform_id = $platform_id) and (status='$status') and (comment='$comment') and (report_date='$report_date')";
-  #my $id = $dbh->selectrow_array($sql);
-  #next() if ( $id );
-  #my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
-  #print "facility_status: $sql\n";
-  #$dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
+  $dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
 
 }
 sub connectToDB()
