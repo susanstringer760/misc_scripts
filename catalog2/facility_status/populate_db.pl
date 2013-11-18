@@ -55,6 +55,11 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
   $status = 'provisional' if ($i % 3) == 0;
   my $platform_id = $platform_category_arr[$i][$platform_id_index];
   my $platform_name =  $platform_category_arr[$i][$platform_name_index];
+  print "processing $platform_name\n";
+  if ($platform_name =~ /report/i) {
+    print "skipping $platform_name..\n";
+    next();
+  }
   my $category_id = $platform_category_arr[$i][$category_id_index];
   my $category_name = $platform_category_arr[$i][$category_name_index];
   #$status = "up"; 
@@ -86,8 +91,10 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
   if ( $add_flag eq 'true') {
     my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
   }
-  #print "adding project_id: $project_id and platform_id: $platform_id and category_id: $category_id and status: $status and comment: '$comment' to catalog_facility_status\n\n";
+
 }
+
+$dbh->disconnect();
 #***************************
 sub insert_instrument {
 
@@ -102,6 +109,7 @@ sub insert_instrument {
   # don't try to enter duplicate record
   return $id if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
+  #print "$sql\n";
   $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
 
   return $id;
@@ -150,6 +158,7 @@ sub insert_facility_status {
   my $id = get_facility_status_id($dbh,$project_id,$platform_id,$status,$comment,$report_date);
   return $id if ( $id );
   my $sql = "INSERT INTO catalog_facility_status (project_id,platform_id,instrument_id,category_id,status,comment,report_date) VALUES ($project_id,$platform_id,$instrument_id,$category_id,'$status','$comment','$report_date')";
+  #print "$sql\n";
   $dbh->do($sql) or die "Couldn't execute facility status sql: $dbh->errstr";
 
 }
