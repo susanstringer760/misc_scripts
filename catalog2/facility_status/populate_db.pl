@@ -5,30 +5,28 @@
 
 use Getopt::Std;
 use DBI;
+require "db.config";
 
 if ( $#ARGV <= 0 ) {
   print "$0:\n";
   print "\t-n project abrev\n";
-  print "\t-p platorm temporary table name\n";
-  print "\t-c category temporary table name\n";
   print "\t-i project id\n";
   print "\t-d date (YYYY-MM-DD)\n";
   exit();
 }
 
-getopt('npcid');
+getopt('nid');
 my $project_name = $opt_n;
-my $platform_table_name = $opt_p;
-my $category_table_name = $opt_c;
 my $project_id = $opt_i;
 my $date = $opt_d;
 
-# db info
-$db_name = "zith9_mpex_facility_status";
-$db_user = "snorman";
-$db_password = "emdac";
-$db_host = "localhost";
-$dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
+print "processing $date\n";
+
+# connect to db 
+my $dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
+
+my $platform_table_name = "$project_name"."_platforms";
+my $category_table_name = "$project_name"."_categories";
 
 # create temporary platform table
 my $platform_sql = "create temporary table if not exists $platform_table_name as (select dp.dataset_id,dp.platform_id,p.name from dataset_platform dp, platform p where dp.dataset_id in (select dataset_id from dataset_project where project_id = $project_id) and p.name like '%,%' and dp.platform_id = p.id)";
@@ -55,11 +53,8 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
   $status = 'provisional' if ($i % 3) == 0;
   my $platform_id = $platform_category_arr[$i][$platform_id_index];
   my $platform_name =  $platform_category_arr[$i][$platform_name_index];
-  print "processing $platform_name\n";
-  if ($platform_name =~ /report/i) {
-    print "skipping $platform_name..\n";
-    next();
-  }
+  #print "processing $platform_name\n";
+  next if ($platform_name =~ /report/i);
   my $category_id = $platform_category_arr[$i][$category_id_index];
   my $category_name = $platform_category_arr[$i][$category_name_index];
   #$status = "up"; 
@@ -82,7 +77,6 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
       $comment = "$project_name: $platform_name instrument$j comment";
       my $instrument_id = insert_instrument($dbh,$instrument_name,$instrument_short_name);
       my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
-      print "******************\n";
     } 
     $add_flag = false;
     $num_instruments += 3;
@@ -110,7 +104,7 @@ sub insert_instrument {
   return $id if ( $id );
   my $sql = "INSERT INTO instrument (name,short_name) VALUES ('$name','$short_name')";
   #print "$sql\n";
-  $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql$dbh->errstr";
+  $dbh->do($sql) or die "Couldn't execute sql: $instrument_sql $dbh->errstr";
 
   return $id;
 
@@ -136,7 +130,7 @@ sub get_instrument_id {
   my $name = shift;
   my $short_name = shift;
   my $sql = "SELECT id FROM instrument WHERE name='$name' AND short_name='$short_name'";
-  print "$sql\n";
+  #print "$sql\n";
   my $instrument_id = $dbh->selectrow_array($sql);
 
   return $instrument_id;
@@ -191,35 +185,33 @@ sub dbiErrorHandler {
   return 1;
 
 }
-
-
-sub connectToDB()
-{
-
-  my $db_name = shift;
-  my $user = shift;
-  my $password = shift;
-  my $host = shift;
-
-  return DBI->connect( "DBI:mysql:database=$db_name;
-                       host=$host",
-                       "$user",
-                       "$password",
-                       { PrintError => 0,
-                         PrintWarn => 1,
-                         RaiseError => 1,
-                         HandleError => \&dbiErrorHandler,
-                       } ) || die( "Unable to Connect to database" );
-
-}
-
-sub dbiErrorHandler {
-
-  $error = shift;
-  print "ERROR: $error\n";
-  exit();
-
-  return 1;
-
-}
+#sub connectToDB()
+#{
+#
+#  my $db_name = shift;
+#  my $user = shift;
+#  my $password = shift;
+#  my $host = shift;
+#
+#  return DBI->connect( "DBI:mysql:database=$db_name;
+#                       host=$host",
+#                       "$user",
+#                       "$password",
+#                       { PrintError => 0,
+#                         PrintWarn => 1,
+#                         RaiseError => 1,
+#                         HandleError => \&dbiErrorHandler,
+#                       } ) || die( "Unable to Connect to database" );
+#
+#}
+#
+#sub dbiErrorHandler {
+#
+#  $error = shift;
+#  print "ERROR: $error\n";
+#  exit();
+#
+#  return 1;
+#
+#}
 
