@@ -11,19 +11,29 @@ if ( $#ARGV <= 0 ) {
   print "$0:\n";
   print "\t-n project abrev\n";
   print "\t-i project id\n";
+  print "\t-s status index (1-3)\n";
   print "\t-d date (YYYY-MM-DD)\n";
   exit();
 }
 
-getopt('nid');
+getopt('nids');
 my $project_name = $opt_n;
 my $project_id = $opt_i;
 my $date = $opt_d;
+my $status_index = $opt_s;
 
-print "processing $date\n";
+$status_index = 0 if (!$status_index);
+
+my @status_arr1;
+my %status_hash;
+$status_hash['0'] = ["up","down","provisional"];
+$status_hash['1'] = ["down","provisional","up"];
+$status_hash['2'] = ["provisional","up","down"];
+
+print "$date: $status_index = $status_hash[$status_index][0]\n";
 
 # connect to db 
-my $dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
+my $dbh = connectToDB();
 
 my $platform_table_name = "$project_name"."_platforms";
 my $category_table_name = "$project_name"."_categories";
@@ -48,9 +58,12 @@ my $num_instruments = 4;
 my ($status,$comment);
 my $add_flag = true;
 for ($i=0; $i <= $#platform_category_arr; $i++) {
-  $status = 'up' if ($i % 1) == 0;
-  $status = 'down' if ($i % 2) == 0;
-  $status = 'provisional' if ($i % 3) == 0;
+  $status = $status_hash[$status_index][0] if (($i % 1)==0);
+  $status = $status_hash[$status_index][1] if (($i % 2)==0);
+  $status = $status_hash[$status_index][2] if (($i % 3)==0);
+  #$status = 'up' if ($i % 1) == 0;
+  #$status = 'down' if ($i % 2) == 0;
+  #$status = 'provisional' if ($i % 3) == 0;
   my $platform_id = $platform_category_arr[$i][$platform_id_index];
   my $platform_name =  $platform_category_arr[$i][$platform_name_index];
   #print "processing $platform_name\n";
@@ -62,9 +75,12 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
   $add_flag = true;
   if ($platform_name =~ /Aircraft/) {
     for ($j = 1;$j <= $num_instruments; $j++) {
-      $status = 'up' if ($j % 1) == 0;
-      $status = 'down' if ($j % 2) == 0;
-      $status = 'provisional' if ($j % 3) == 0;
+      $status = $status_hash[$status_index][0] if (($j % 1)==0);
+      $status = $status_hash[$status_index][1] if (($j % 2)==0);
+      $status = $status_hash[$status_index][2] if (($j % 3)==0);
+#      $status = 'up' if ($j % 1) == 0;
+#      $status = 'down' if ($j % 2) == 0;
+#      $status = 'provisional' if ($j % 3) == 0;
       #$status = "up";
       $platform_name =~ /(Aircraft),([\w\d\-\_\s]+)/;
       #my $instrument_short_name = $2;
@@ -79,8 +95,8 @@ for ($i=0; $i <= $#platform_category_arr; $i++) {
       my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);
     } 
     $add_flag = false;
-    $num_instruments += 3;
   }
+  $num_instruments += 2;
   # now add facility_status platform
   if ( $add_flag eq 'true') {
     my $facility_status_id = insert_facility_status($dbh,$project_id,$platform_id,$instrument_id,$category_id,$status,$comment,$date);

@@ -18,7 +18,7 @@ getopt('i');
 my $project_id = $opt_i;
 
 # connect to db 
-$dbh = connectToDB($db_name,$db_user,$db_password,$db_host);
+$dbh = connectToDB();
 
 #
 my $sql = "select name,begin_date,end_date from project where id = $project_id";
@@ -47,16 +47,20 @@ my $end_epoch = timegm($end_sec,$end_min,$end_hour,$end_day,$end_month,$end_year
 
 my $i = 1;
 my $time = $begin_epoch;
+my $status_index;
 while(1) {
+  $status_index = 0 if ($i % 1) == 0;
+  $status_index = 1 if ($i % 2) == 0;
+  $status_index = 2 if ($i % 3) == 0;
   my $diff = 60*60*24*$i;
   $time = $begin_epoch + $diff;
   my ($sec,$min,$hour,$day,$month,$year) = (localtime($time))[0,1,2,3,4,5];
   #my $report_date = sprintf ('%4d-%02d-%02d %02d:%02d:%02d', $year+1900,$month+1, $day,$hour,$min,$sec);
   my $report_date = sprintf ("%4d-%02d-%02d", $year+1900,$month+1,$day);
   #print "$report_date\n";
-  my $script_fname = "/usr/local/snorman/misc_scripts/catalog2/facility_status/populate_db.pl -n $project_name -i $project_id -d $report_date";
+  my $script_fname = "/usr/local/snorman/misc_scripts/catalog2/facility_status/populate_db.pl -n $project_name -i $project_id -d $report_date -s $status_index";
   print "$script_fname\n";
-  system($script_fname);
+  #system($script_fname);
   $i++;
   last if ($time > $end_epoch );
 }
