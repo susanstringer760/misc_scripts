@@ -45,17 +45,23 @@ my $end_month = $2-1;
 my $end_day = $3;
 my $end_epoch = timegm($end_sec,$end_min,$end_hour,$end_day,$end_month,$end_year); 
 
+my $num_days = ($end_epoch - $begin_epoch)/86400;
+my $day_increment = int($num_days/3); 
+
 my $i = 1;
 my $time = $begin_epoch;
 my $status_index;
-my $index_count = 0;
+#my $index_count = 0;
 while(1) {
+  $status_index = 0 if ($i <= $day_increment);
+  $status_index = 1 if (($i > $day_increment) && ($i <= $day_increment*2));
+  $status_index = 2 if (($i > $day_increment*2) && ($i <= $day_increment*3));
   #$status_index = 0 if ($i % 1) == 0;
  # $status_index = 1 if ($i % 2) == 0;
  # $status_index = 2 if ($i % 3) == 0;
-  $status_index = 0 if ($index_count % 1) == 0;
-  $status_index = 1 if ($index_count % 3) == 0;
-  $status_index = 2 if ($index_count % 5) == 0;
+  #$status_index = 0 if ($index_count % 1) == 0;
+  #$status_index = 1 if ($index_count % 3) == 0;
+  #$status_index = 2 if ($index_count % 5) == 0;
   #$status_index = 1 if ($index_count % 2) == 0;
   #$status_index = 2 if ($index_count % 3) == 0;
   my $diff = 60*60*24*$i;
@@ -66,7 +72,7 @@ while(1) {
   print "$script_fname\n";
   #$index_count++;
   system($script_fname);
-  $index_count += 2;
+  #$index_count += 2;
   $i++;
   last if ($time > $end_epoch );
 }
