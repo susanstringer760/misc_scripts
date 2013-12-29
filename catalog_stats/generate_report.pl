@@ -67,8 +67,7 @@ my $db_name = $opt_n;
 
 my $out_fname = "$opt_o.$date";
 
-#open(OUT, ">$out_fname") || die "cannot open $out_fname";
-#print OUT "$project:\n";
+open(OUT, ">$out_fname") || die "cannot open $out_fname";
 
 # connect to the db
 my $dbh = connectDatabase($db_name, $db_user, $db_password );
@@ -79,12 +78,17 @@ my @categories = fetch_categories($dbh);
 
 # stuff dates into hash
 my $date_list_ref = get_date_list($begin_date,$end_date);
+
+#***********************************
+# get file size for each category 
+#***********************************
 my %date_hash;
 foreach $date (@$date_list_ref) {
   $date_hash{$date} = 'valid';
 }
 
 foreach $category (@categories) {
+    #next();
     my $category_dir = "$html_base_path/$project/$category";
     my $du_cmd = "du -h $category_dir";
     my $status = `$du_cmd`;
@@ -107,14 +111,60 @@ foreach $category (@categories) {
       #print "****************\n";
     }
 }
-foreach $category (keys(%category_size_hash)) {
+#***********************************
+# get number of report images
+#***********************************
+my $report_dir = "$html_base_path/$project/report";
+my $image_count = 0;
+foreach $date (@$date_list_ref) {
+  #my $cmd = "find $dir -name '$date*report*image*' -print | wc -l";
+  my $find_cmd = "find $report_dir -name 'report.*.$date*.*.image*.*' -print | wc -l";
+  my $num_images = `$find_cmd`;
+  chop($num_images);
+  $image_count += $num_images;
+  #print OUT "number of images for $dir is: $num_images\n" if ( $num_images > 0 );
+  #print OUT "no images for $dir\n" if ($num_images <= 0);
+}
+
+#***********************************
+# get number of files 
+#***********************************
+my %file_count_hash;
+my $total_num_files = 0;
+foreach $category (@categories) {
+  my $sql = "select count(*) from files where (begin >= $begin_date and begin <= $end_date) and url_dir like '/$project/$category/%' and filename like '$category%'";
+  my $array_ref = $dbh->selectrow_arrayref($sql);
+  my $num_files = $array_ref->[0];
+  $total_num_files += $num_files;
+  $file_count_hash{$category} = $num_files;
+}
+#***********************************
+# print out report 
+#***********************************
+my $title = uc($project);
+$begin_date =~ /(\d{4})(\d{2})(\d{2})/;
+$title .= " ($1-$2-$3  to ";
+$end_date =~ /(\d{4})(\d{2})(\d{2})/;
+$title .= "$1-$2-$3)";
+print OUT "$title:\n";
+my $total_size = 0;
+foreach $category (sort(keys(%category_size_hash))) {
   my $sum = 0;
   foreach $size (@{$category_size_hash{$category}}) {
     $sum += $size;
   }
-  print "$category = $sum\n";
+  $sum = sprintf("%.2f", $sum);
+  $total_size += $sum;
+  if ( $category eq 'report') {
+    print OUT "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
+  } else {
+    print OUT "   $category: $file_count_hash{$category} products = $sum GB\n";
+  }
 }
+print OUT "   TOTAL: $total_num_files products ($total_size GB)\n";
+close(OUT);
 
+#***********************************
 sub fetch_categories {
   my $dbh = shift;
   my @arr;
