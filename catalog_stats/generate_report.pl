@@ -143,9 +143,9 @@ foreach $category (@categories) {
 #***********************************
 my $title = uc($project);
 $begin_date =~ /(\d{4})(\d{2})(\d{2})/;
-$title .= " ($1-$2-$3  to ";
+$title .= " $1-$2-$3  to ";
 $end_date =~ /(\d{4})(\d{2})(\d{2})/;
-$title .= "$1-$2-$3)";
+$title .= "$1-$2-$3";
 print OUT "$title:\n";
 my $total_size = 0;
 foreach $category (sort(keys(%category_size_hash))) {
@@ -161,7 +161,7 @@ foreach $category (sort(keys(%category_size_hash))) {
     print OUT "   $category: $file_count_hash{$category} products = $sum GB\n";
   }
 }
-print OUT "   TOTAL: $total_num_files products ($total_size GB)\n";
+print OUT "   TOTAL: $total_num_files products = $total_size GB\n";
 close(OUT);
 
 #***********************************
