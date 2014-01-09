@@ -3,6 +3,8 @@
 use DBI;
 use Getopt::Std;
 use Sys::Hostname;
+use FindBin qw($Bin);
+use lib "$Bin/lib";
 require "catalog_stats.include.pl";
 require "catalog_stats.config";
 
