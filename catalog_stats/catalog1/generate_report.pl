@@ -90,7 +90,6 @@ foreach $date (@$date_list_ref) {
 }
 
 foreach $category (@categories) {
-    #next();
     my $category_dir = "$html_base_path/$project/$category";
     my $du_cmd = "du -h $category_dir";
     my $status = `$du_cmd`;
@@ -124,8 +123,6 @@ foreach $date (@$date_list_ref) {
   my $num_images = `$find_cmd`;
   chop($num_images);
   $image_count += $num_images;
-  #print OUT "number of images for $dir is: $num_images\n" if ( $num_images > 0 );
-  #print OUT "no images for $dir\n" if ($num_images <= 0);
 }
 
 #***********************************
@@ -151,6 +148,7 @@ $title .= "$1-$2-$3";
 print OUT "$title:\n";
 my $total_size = 0;
 foreach $category (sort(keys(%category_size_hash))) {
+  print "processing $category\n";
   my $sum = 0;
   foreach $size (@{$category_size_hash{$category}}) {
     $sum += $size;
@@ -158,11 +156,14 @@ foreach $category (sort(keys(%category_size_hash))) {
   $sum = sprintf("%.2f", $sum);
   $total_size += $sum;
   if ( $category eq 'report') {
+    print "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
     print OUT "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
   } else {
+    print "   $category: $file_count_hash{$category} products = $sum GB\n";
     print OUT "   $category: $file_count_hash{$category} products = $sum GB\n";
   }
 }
+print "   TOTAL: $total_num_files products = $total_size GB\n";
 print OUT "   TOTAL: $total_num_files products = $total_size GB\n";
 close(OUT);
 
