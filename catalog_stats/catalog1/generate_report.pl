@@ -148,7 +148,6 @@ $title .= "$1-$2-$3";
 print OUT "$title:\n";
 my $total_size = 0;
 foreach $category (sort(keys(%category_size_hash))) {
-  print "processing $category\n";
   my $sum = 0;
   foreach $size (@{$category_size_hash{$category}}) {
     $sum += $size;
