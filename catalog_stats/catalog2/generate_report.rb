@@ -28,21 +28,11 @@ if options[:project_id] == nil
     options[:project_id] = gets.chomp
 end
 
-project_id = options[:project_id]
+project_id = options[:project_id].to_i
 
 # load the models
 load_models()
-project_id = 382
 
-# all the catalog datasets for this project
-project_datasets = get_datasets(project_id)
-
-category_hash = Hash.new{|hash, key| hash[key] = Array.new}
-project_datasets.each {|d| 
-  category = d.categories[0]
-  category_hash[category.short_name].push(d) 
-}
-
-category_hash.each_key {|category|
-  puts "#{category}: #{category_hash[category].length}"
-}
+# hash where key is category and value is arr of
+# category datafiles
+stats_hash = get_datafiles_by_category(project_id)

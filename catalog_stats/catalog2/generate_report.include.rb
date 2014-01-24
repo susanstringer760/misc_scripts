@@ -21,6 +21,31 @@ def get_datasets(project_id)
 
 end
 
+def get_datafiles_by_category(project_id)
+
+  # return hash where key is category and value is list 
+  # of file objects for this category
+  project_datasets = get_datasets(project_id)
+
+  tmp_hash = Hash.new{|hash, key| hash[key] = Array.new}
+  stats_hash = Hash.new{|hash, key| hash[key] = Array.new}
+
+  # loop through each dataset
+  project_datasets.each {|d| 
+    category = d.categories[0]
+    tmp_hash[category.short_name].push(d.datafiles)
+  }
+
+  # now flatten since the value of the hash
+  # is an array of arrays
+  tmp_hash.each {|category,datafile_arr|
+    stats_hash[category] = datafile_arr.flatten
+  }
+
+  stats_hash
+
+end
+
 def get_categories(project_id)
 
   # get the available categories for the project
