@@ -46,6 +46,13 @@ def get_datafiles_by_category(project_id)
 
 end
 
+def print_stats(stats_hash)
+  stats_hash.keys.each { |category|
+    num_files = stats_hash[category].length
+    puts "#{category}: #{num_files}"
+  }
+end
+
 def get_categories(project_id)
 
   # get the available categories for the project

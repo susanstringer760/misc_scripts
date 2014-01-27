@@ -36,3 +36,5 @@ load_models()
 # hash where key is category and value is arr of
 # category datafiles
 stats_hash = get_datafiles_by_category(project_id)
+
+print_stats(stats_hash)
