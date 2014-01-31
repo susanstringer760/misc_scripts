@@ -5,8 +5,9 @@ use Getopt::Std;
 use Sys::Hostname;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-require "catalog_stats.include.pl";
-require "catalog_stats.config";
+use lib "$Bin/config";
+require "generate_report.include.pl";
+require "database.pl";
 
 # get file counts from db
 
@@ -155,14 +156,14 @@ foreach $category (sort(keys(%category_size_hash))) {
   $sum = sprintf("%.2f", $sum);
   $total_size += $sum;
   if ( $category eq 'report') {
-    print "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
+    #print "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
     print OUT "   $category: $file_count_hash{$category} reports ($image_count images) = $sum GB\n";
   } else {
-    print "   $category: $file_count_hash{$category} products = $sum GB\n";
+    #print "   $category: $file_count_hash{$category} products = $sum GB\n";
     print OUT "   $category: $file_count_hash{$category} products = $sum GB\n";
   }
 }
-print "   TOTAL: $total_num_files products = $total_size GB\n";
+#print "   TOTAL: $total_num_files products = $total_size GB\n";
 print OUT "   TOTAL: $total_num_files products = $total_size GB\n";
 close(OUT);
 
